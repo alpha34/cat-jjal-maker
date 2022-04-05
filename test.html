@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TEST</title>
+  </head>
+  <script>
+    /* 불변성 테스트 */
+    var coke = {
+      name: "coke",
+      price: 2980,
+      fake: {
+        name: "pepsi",
+      },
+    };
+
+    var new_coke = { ...coke }; //스레드 문법  : 1레벨 깊이에서만 유효
+    coke.name = "pepsi";
+    console.log(coke.name, new_coke.name); //pepsi, coke
+
+    coke.fake.name = "coca zero";
+    console.log(coke.fake.name, new_coke.fake.name); //coca zero, coca zero
+
+    ("use strict");
+    function myFunction() {
+      return this;
+    }
+    console.log(myFunction()); //undefined
+  </script>
+  <body></body>
+</html>
