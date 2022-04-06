@@ -48,6 +48,15 @@
         },
       };
 
+      const fetchCat = async (text) => {
+        const OPEN_API_DOMAIN = "https://cataas.com";
+        const response = await fetch(
+          `${OPEN_API_DOMAIN}/cat/says/${text}?json=true`
+        );
+        const responseJson = await response.json();
+        return `${OPEN_API_DOMAIN}/${responseJson.url}`;
+      };
+
       const Title = (porps) => {
         return (
           <h1>{porps.children}</h1>
@@ -73,6 +82,10 @@
 
         //const cats = [CAT1, CAT2];
 
+        if (favorites.length === 0) {
+          return <div>사진 위 하트를 눌러 고양이 사진을 저장하세요.</div>;
+        }
+
         //component는 첫글자를 대문자로..
         return (
           <ul className="favorites">
@@ -94,11 +107,13 @@
       // };
 
       /* 구조분해 문법 후 */
-      const MainCard = ({ img, onHeartClick }) => {
+      const MainCard = ({ img, onHeartClick, alreadyFavorite }) => {
+        const heartIcon = alreadyFavorite ? "💖" : "🤍";
+
         return (
           <div className="main-card">
             <img src={img} alt="고양이" width="400"></img>
-            <button onClick={onHeartClick}>🤍</button>
+            <button onClick={onHeartClick}>{heartIcon}</button>
           </div>
         );
       };
@@ -130,7 +145,7 @@
           if (value === "") {
             setErrorMessage("빈 값으로 만들 수 없습니다.");
           }
-          updateMainCat();
+          updateMainCat(value);
         }
 
         return (
@@ -157,19 +172,59 @@
         const CAT3 =
           "https://cataas.com/cat/595f280b557291a9750ebf65/says/JavaScript";
 
-        const [counter, setCounter] = React.useState(
-          jsonLocalStorage.getItem("counter")
-        );
-        const [mainCatImg, setMainCatImg] = React.useState(CAT1);
-        const [favorites, setFavorites] = React.useState(
-          jsonLocalStorage.getItem("favorites") || []
-        );
+        // 불필요하게 localStorag 접근 제어
+        // const [counter, setCounter] = React.useState(
+        //   jsonLocalStorage.getItem("counter")
+        // );
 
-        function updateMainCat() {
-          setMainCatImg(CAT2);
-          const nextCounter = counter + 1;
-          setCounter(nextCounter);
-          jsonLocalStorage.setItem("counter", nextCounter);
+        const [counter, setCounter] = React.useState(() => {
+          return jsonLocalStorage.getItem("counter");
+        });
+
+        const [mainCatImg, setMainCatImg] = React.useState(CAT1);
+
+        // 불필요하게 localStorag 접근 제어
+        // const [favorites, setFavorites] = React.useState(
+        //   jsonLocalStorage.getItem("favorites") || []
+        // );
+
+        const [favorites, setFavorites] = React.useState(() => {
+          return jsonLocalStorage.getItem("favorites");
+        });
+
+        const alreadyFavorite = favorites.includes(mainCatImg);
+
+        //app 진입시 메인 cat이미지 표기
+        async function setInitialCat() {
+          const newCat = await fetchCat("First cat");
+          console.log("1 : " + newCat);
+          setMainCatImg(newCat);
+        }
+
+        React.useEffect(() => {
+          setInitialCat();
+        }, []); //빈 배열[]을 넣어서 처음에만 호출 하도록 함
+
+        React.useEffect(() => {
+          //리엑트 컴포넌트 안에 있는 함수는 UI 를 새로 그릴때마다 호출한다.
+          console.log("헬로..."); //app이 UI 를 새로 그릴때마다 찍음
+        }, [counter]); //2번째 인자로 counter 변수가 바뀔때마다 '헬로'가 바뀐다.
+
+        console.log("헬로11111..."); //app이 UI 를 새로 그릴때마다 찍음
+
+        async function updateMainCat(value) {
+          const newCat = await fetchCat(value); //api로 cat이미지 받아오기
+
+          setMainCatImg(newCat);
+
+          //setCounter(nextCounter);  //setCounter 에 값 대신 아래와 같이 함수로 대체
+          setCounter((prev) => {
+            //setCounter 라는 함수를 생성해서 연타 방지
+            //prev : setCounter 변경하기 전 기존 값.
+            const nextCounter = prev + 1;
+            jsonLocalStorage.setItem("counter", nextCounter);
+            return nextCounter;
+          });
         }
 
         function handleHeartClick() {
@@ -180,9 +235,13 @@
 
         return (
           <div>
-            <Title>{counter}번째 고양이</Title>
+            <Title> {counter === null ? "" : counter + "번째 "}고양이</Title>
             <Form updateMainCat={updateMainCat} />
-            <MainCard img={mainCatImg} onHeartClick={handleHeartClick} />
+            <MainCard
+              img={mainCatImg}
+              onHeartClick={handleHeartClick}
+              alreadyFavorite={alreadyFavorite}
+            />
             <Favorites favorites={favorites} />
           </div>
         );
